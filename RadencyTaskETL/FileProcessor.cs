@@ -47,16 +47,16 @@ namespace RadencyTaskETL
         {
             try
             {
-                var kek = Regex.Split(line, ",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)").Select(x => x.Trim()).ToArray();
+                var raw = Regex.Split(line, ",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)").Select(x => x.Trim()).ToArray();
                 var obj = new InputData
                 {
-                    FirstName = kek[0],
-                    LastName = kek[1],
-                    City = kek[2].Trim('\"').Split(',')[0],
-                    Payment = decimal.Parse(kek[3], CultureInfo.InvariantCulture),
-                    Date = DateOnly.ParseExact(kek[4], "yyyy-dd-MM"),
-                    AccountNumber = long.Parse(kek[5]),
-                    Service = kek[6]
+                    FirstName = raw[0],
+                    LastName = raw[1],
+                    City = raw[2].Trim('\"').Split(',')[0],
+                    Payment = decimal.Parse(raw[3], CultureInfo.InvariantCulture),
+                    Date = DateOnly.ParseExact(raw[4], "yyyy-dd-MM"),
+                    AccountNumber = long.Parse(raw[5]),
+                    Service = raw[6]
                 };
                 if (!obj.IsValid()) throw new ValidationException();
                 _logger.ParsedLines++;
@@ -73,7 +73,7 @@ namespace RadencyTaskETL
         
         private List<CityData> Transform(IEnumerable<InputData> data)
         {
-            var xd = data.Select(x => (
+            var csp = data.Select(x => (
                 city: x.City,
                 service: x.Service,
                 payer: new PayerData()
@@ -84,13 +84,18 @@ namespace RadencyTaskETL
                     AccountNumber = x.AccountNumber
                 })).ToArray();
             
-            var result = xd.GroupBy(x => x.city).Select(x => new CityData(){City = x.Key}).ToList();
+            var result = csp
+                .GroupBy(x => x.city).Select(x => new CityData(){City = x.Key}).ToList();
             foreach (var city in result)
             {
-                city.Services = xd.Where(x => x.city == city.City).GroupBy(x => x.service).Select(x => new ServiceData(){Name = x.Key}).ToList();
+                city.Services = csp
+                    .Where(x => x.city == city.City)
+                    .GroupBy(x => x.service).Select(x => new ServiceData(){Name = x.Key}).ToList();
                 foreach (var service in city.Services)
                 {
-                    service.Payers = xd.Where(x => x.city == city.City && x.service == service.Name).Select(x => x.payer).ToList();
+                    service.Payers = csp
+                        .Where(x => x.city == city.City && x.service == service.Name)
+                        .Select(x => x.payer).ToList();
                     service.Total = service.GetTotal();
                 }
                 city.Total = city.GetTotal();

@@ -1,4 +1,5 @@
-﻿using System.Configuration;
+﻿using System;
+using System.Configuration;
 using System.IO;
 using System.Linq;
 
@@ -6,12 +7,15 @@ namespace RadencyTaskETL
 {
     public class FilesTracker
     {
-        private readonly string _path = ConfigurationManager.AppSettings["path_a"]!;
+        private readonly string _path;
         private readonly FileSystemWatcher _watcher;
         public State State;
 
         public FilesTracker()
         {
+            _path = ConfigurationManager.AppSettings["path_a"]!;
+            if (_path is null) throw new NullReferenceException();
+
             _watcher = new FileSystemWatcher(_path);
             _watcher.Created += OnCreated;
         }

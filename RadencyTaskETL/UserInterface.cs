@@ -6,7 +6,18 @@ namespace RadencyTaskETL
     {
         public void StartLoop()
         {
-            var tracker = new FilesTracker();
+            FilesTracker tracker;
+            try
+            {
+                tracker = new FilesTracker();
+            }
+            catch
+            {
+                Print("App.config file is not available or empty", ConsoleColor.Red);
+                Console.ReadKey();
+                return;
+            }
+            
             Start();
 
             while (true)
@@ -44,9 +55,9 @@ namespace RadencyTaskETL
             }
         }
 
-        private void Print(string message)
+        private void Print(string message, ConsoleColor color = ConsoleColor.Yellow)
         {
-            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.ForegroundColor = color;
             Console.WriteLine(message);
             Console.ResetColor();
         }

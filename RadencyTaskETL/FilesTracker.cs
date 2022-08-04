@@ -7,26 +7,47 @@ namespace RadencyTaskETL
     public class FilesTracker
     {
         private readonly string _path = ConfigurationManager.AppSettings["path_a"]!;
-        private FileSystemWatcher _watcher;
+        private readonly FileSystemWatcher _watcher;
+        public State State;
 
-        public void Run()
+        public FilesTracker()
         {
-            DoFiles();
-            
             _watcher = new FileSystemWatcher(_path);
             _watcher.Created += OnCreated;
+        }
+        
+        public void Start()
+        {
+            FileProcessor.LoadMetaData();
+            ProcessExistingFiles();
             _watcher.EnableRaisingEvents = true;
+
+            State = State.Working;
         }
 
-        private void DoFiles()
+        public void Stop()
+        {
+            FileProcessor.RenderMetaLog();
+            _watcher.EnableRaisingEvents = false;
+
+            State = State.Stopped;
+        }
+
+        public void Reset()
+        {
+            Stop();
+            Start();
+        }
+
+        private void ProcessExistingFiles()
         {
             var dir = new DirectoryInfo(_path);
-            foreach (string path in dir.GetFiles().Select(x => x.FullName)) DoFile(path);
+            foreach (string path in dir.GetFiles().Select(x => x.FullName)) ProcessFile(path);
         }
 
-        private void OnCreated(object source, FileSystemEventArgs e) => DoFile(e.FullPath);
+        private void OnCreated(object source, FileSystemEventArgs e) => ProcessFile(e.FullPath);
 
-        private void DoFile(string path)
+        private void ProcessFile(string path)
         {
             string extension = path.Substring(path.LastIndexOf('.'));
             switch (extension)
@@ -39,6 +60,11 @@ namespace RadencyTaskETL
                     return;
             }
         }
-        
+    }
+
+    public enum State
+    {
+        Working,
+        Stopped
     }
 }

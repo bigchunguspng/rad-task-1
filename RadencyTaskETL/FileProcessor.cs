@@ -14,9 +14,8 @@ namespace RadencyTaskETL
     {
         private readonly string _path;
 
-        public static int ParsedFiles, ParsedLines, FoundErrors;
-        public static HashSet<string> InvalidFiles = new HashSet<string>();
-        public static HashSet<string> InvalidLines = new HashSet<string>();
+        private static Logger _logger = new Logger();
+        private static DateTime _today = DateTime.Today;
 
         public FileProcessor(string path)
         {
@@ -25,13 +24,17 @@ namespace RadencyTaskETL
 
         public void Run()
         {
-            var lines = File.ReadAllLines(_path);
+            using var stream = new FileStream(_path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            using var reader = new StreamReader(stream);
+            
+            var lines = reader.ReadToEnd().Split('\n');
             var data = lines.Select(ProcessLine).Where(x => x != null);
+            if (_path.EndsWith(".csv")) data = data.Skip(1);
             var cities = Transform(data);
             var saver = new FileOutput<List<CityData>>(GetOutputPath());
             
             saver.SaveData(cities);
-            ParsedFiles++;
+            _logger.ParsedFiles++;
         }
 
         private InputData ProcessLine(string line)
@@ -50,14 +53,14 @@ namespace RadencyTaskETL
                     Service = kek[6]
                 };
                 if (!obj.IsValid()) throw new ValidationException();
-                ParsedLines++;
+                _logger.ParsedLines++;
                 return obj;
             }
             catch
             {
-                FoundErrors++;
-                InvalidFiles.Add(_path);
-                InvalidLines.Add(line);
+                _logger.FoundErrors++;
+                _logger.InvalidFiles.Add(_path);
+                _logger.InvalidLines.Add(line.Trim('\r'));
                 return null;
             }
         }
@@ -92,10 +95,27 @@ namespace RadencyTaskETL
 
         private string GetOutputPath()
         {
-            var path = $@"{ConfigurationManager.AppSettings["path_b"]!}\{DateTime.Today:yyyy-MM-dd}";
+            var path = $@"{GetWorkingDirectory()}";
             Directory.CreateDirectory(path);
 
-            return $@"{path}\output{(ParsedFiles > 0 ? ParsedFiles.ToString() : "")}.json";
+            return $@"{path}\output{(_logger.ParsedFiles > 0 ? _logger.ParsedFiles.ToString() : "")}.json";
         }
+
+        private static string GetMetalogPath() => $@"{GetWorkingDirectory()}\meta.log";
+        private static string GetWorkingDirectory() => $@"{ConfigurationManager.AppSettings["path_b"]!}\{_today:yyyy-MM-dd}";
+
+        public static void RenderMetaLog()
+        {
+            _logger.LogData(GetMetalogPath());
+            
+            _today = DateTime.Today;
+        }
+
+        public static void LoadMetaData()
+        {
+            string path = GetMetalogPath();
+            _logger = File.Exists(path) ? new Logger(GetMetalogPath()) : new Logger();
+        }
+        
     }
 }

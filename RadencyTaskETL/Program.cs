@@ -4,8 +4,8 @@ namespace RadencyTaskETL
     {
         private static void Main()
         {
-            var tracker = new FilesTracker();
-            tracker.Run();
+            var ui = new UserInterface();
+            ui.StartLoop();
         }
     }
 }

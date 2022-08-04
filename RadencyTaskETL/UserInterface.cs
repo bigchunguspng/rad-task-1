@@ -11,7 +11,7 @@ namespace RadencyTaskETL
             {
                 tracker = new FilesTracker();
             }
-            catch
+            catch (NullReferenceException)
             {
                 Print("App.config file is not available or empty", ConsoleColor.Red);
                 Console.ReadKey();

@@ -122,6 +122,7 @@ namespace RadencyTaskETL
             string path = GetMetalogPath();
             _logger = File.Exists(path) ? new Logger(GetMetalogPath()) : new Logger();
         }
-        
+
+        public static void ResetMeta() => _logger.ResetData();
     }
 }

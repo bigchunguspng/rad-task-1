@@ -6,6 +6,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using RadencyTaskETL.OutputModel;
 
 namespace RadencyTaskETL
 {
@@ -15,6 +16,7 @@ namespace RadencyTaskETL
 
         public static int ParsedFiles, ParsedLines, FoundErrors;
         public static HashSet<string> InvalidFiles = new HashSet<string>();
+        public static HashSet<string> InvalidLines = new HashSet<string>();
 
         public FileProcessor(string path)
         {
@@ -55,6 +57,7 @@ namespace RadencyTaskETL
             {
                 FoundErrors++;
                 InvalidFiles.Add(_path);
+                InvalidLines.Add(line);
                 return null;
             }
         }

@@ -13,6 +13,7 @@ namespace RadencyTaskETL
     public class FileProcessor
     {
         private readonly string _path;
+        private static readonly string PathDone = ConfigurationManager.AppSettings["path_a_done"];
 
         private static Logger _logger = new Logger();
         private static DateTime _today = DateTime.Today;
@@ -24,17 +25,22 @@ namespace RadencyTaskETL
 
         public void Run()
         {
-            using var stream = new FileStream(_path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            using var reader = new StreamReader(stream);
-            
+            using var reader = File.OpenText(_path);
             var lines = reader.ReadToEnd().Split('\n');
-            var data = lines.Select(ProcessLine).Where(x => x != null);
-            if (_path.EndsWith(".csv")) data = data.Skip(1);
+            var data = lines.Skip(_path.EndsWith(".csv") ? 1 : 0).Select(ProcessLine).Where(x => x != null);
             var cities = Transform(data);
             var saver = new FileOutput<List<CityData>>(GetOutputPath());
             
             saver.SaveData(cities);
             _logger.ParsedFiles++;
+        }
+
+        public void MoveFile()
+        {
+            var directory = $@"{PathDone}\{_today:yyyy-MM-dd}";
+            Directory.CreateDirectory(directory);
+            var file = new FileInfo(_path);
+            file.MoveTo($@"{directory}\{file.Name}");
         }
 
         private InputData ProcessLine(string line)

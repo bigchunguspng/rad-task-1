@@ -46,7 +46,8 @@ namespace RadencyTaskETL
         private void ProcessExistingFiles()
         {
             var dir = new DirectoryInfo(_path);
-            foreach (string path in dir.GetFiles().Select(x => x.FullName)) ProcessFile(path);
+            var files = dir.GetFiles().Select(x => x.FullName).ToArray();
+            foreach (string path in files) ProcessFile(path);
         }
 
         private void OnCreated(object source, FileSystemEventArgs e) => ProcessFile(e.FullPath);
@@ -58,7 +59,9 @@ namespace RadencyTaskETL
             {
                 case ".txt":
                 case ".csv":
-                    new FileProcessor(path).Run();
+                    var processor = new FileProcessor(path);
+                    processor.Run();
+                    processor.MoveFile();
                     break;
                 default:
                     return;
